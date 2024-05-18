@@ -4,10 +4,13 @@ using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
 {
-    public float maxSpeed;
-    Rigidbody2D rigid;
-    SpriteRenderer spriteRenderer;
-    Animator anim;
+    public float maxSpeed = 5f;
+    public float jumpPower = 10f;
+    private Rigidbody2D rigid;
+    private SpriteRenderer spriteRenderer;
+    private Animator anim;
+    private bool isGrounded = false;
+
     void Awake()
     {
         rigid = GetComponent<Rigidbody2D>();
@@ -15,41 +18,55 @@ public class PlayerMove : MonoBehaviour
         anim = GetComponent<Animator>();
     }
 
-    // Update is called once per frame
     void Update()
     {
         // Stop Move
-        if(Input.GetButtonUp("Horizontal")){
+        if (Input.GetButtonUp("Horizontal"))
+        {
             rigid.velocity = new Vector2(rigid.velocity.normalized.x * 0.5f, rigid.velocity.y);
         }
 
         // Direction Sprite
-        if(Input.GetButton("Horizontal"))
+        if (Input.GetButton("Horizontal"))
+        {
             spriteRenderer.flipX = Input.GetAxisRaw("Horizontal") == -1;
-
-        // Animaition Change
-        if(Mathf.Abs(rigid.velocity.x) <= 0.2){
-            anim.SetBool("isWalking", false);
         }
-        else{
-            anim.SetBool("isWalking", true);
+
+        // Animation Change
+        anim.SetBool("isWalking", Mathf.Abs(rigid.velocity.x) > 0.2f);
+
+        // Jump
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            rigid.AddForce(Vector2.up * jumpPower, ForceMode2D.Impulse);
+            isGrounded = false; // Assume the player is not grounded right after jumping
         }
     }
+
     void FixedUpdate()
     {
         // Move Speed
         float h = Input.GetAxisRaw("Horizontal");
-        
-        rigid.AddForce(Vector2.right * h, ForceMode2D.Impulse);
+        rigid.velocity = new Vector2(h * maxSpeed, rigid.velocity.y);
 
         // Max Speed
-        if (rigid.velocity.x > maxSpeed){
+        if (rigid.velocity.x > maxSpeed)
+        {
             // Right Max Speed 
             rigid.velocity = new Vector2(maxSpeed, rigid.velocity.y);
         }
-        else if (rigid.velocity.x < maxSpeed*(-1)){
+        else if (rigid.velocity.x < -maxSpeed)
+        {
             // Left Max Speed 
-            rigid.velocity = new Vector2(maxSpeed * (-1), rigid.velocity.y);
+            rigid.velocity = new Vector2(-maxSpeed, rigid.velocity.y);
+        }
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Ground"))
+        {
+            isGrounded = true;
         }
     }
 }
